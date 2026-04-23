@@ -144,12 +144,8 @@ def _boot_letta_server() -> None:
     import subprocess
     env = os.environ.copy()
     env.setdefault("LETTA_SERVER_PASSWORD", "elephantmemory")
-    subprocess.Popen(
-        ["letta", "server"],
-        env=env,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-    _wait_for_port("localhost", 8283, timeout=180, label="letta server")
+    subprocess.Popen(["letta", "server"], env=env)
+    _wait_for_port("localhost", 8283, timeout=300, label="letta server")
 
 
 def _run_cli(
