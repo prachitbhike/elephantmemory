@@ -86,6 +86,27 @@ Implement `MemoryAdapter` from [`elephantmemory/adapters/base.py`](elephantmemor
 
 Keep adapter code thin — push framework-specific config into `__init__` kwargs so the runner can stay framework-agnostic.
 
+## Running in an e2b sandbox (no local docker)
+
+If you don't want to run Postgres locally, you can run the lite adapter
+set (`pgvector_diy`, `claude_memory`, `mem0`) inside a fresh
+[e2b](https://e2b.dev) sandbox:
+
+```bash
+pip install -e ".[mem0,e2b]"
+# add E2B_API_KEY + ANTHROPIC_API_KEY + OPENAI_API_KEY to .env
+python scripts/run_in_e2b.py --adapter pgvector_diy --adapter mem0
+```
+
+The script `git archive`s the working tree, uploads it to a fresh
+sandbox, apt-installs Postgres, builds pgvector from source, runs the
+benchmark, and downloads `results.json` back to
+`results/runs/e2b_<run_id>/`.
+
+`zep` (needs Neo4j) and `letta` (needs the Letta server) require a
+custom e2b template — build one with the e2b CLI and pass `--template
+<id>`. The default sandbox doesn't have the RAM headroom for both.
+
 ## Running multiple adapters at once
 
 ```bash
