@@ -11,6 +11,7 @@ Graphiti is async; we wrap each call in a per-instance event loop.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import time
 from dataclasses import dataclass
@@ -22,6 +23,8 @@ from graphiti_core.llm_client.anthropic_client import AnthropicClient
 from graphiti_core.nodes import EpisodeType
 
 from .. import llm
+
+logging.getLogger("neo4j.notifications").setLevel(logging.ERROR)
 from ..types import (
     AdapterStats,
     ForgetResult,
