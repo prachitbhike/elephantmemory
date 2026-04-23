@@ -24,6 +24,9 @@ results/cache/
 *.sqlite
 *.sqlite-journal
 
+# Lockfile pending uv adoption decision
+uv.lock
+
 # OS / editor
 .DS_Store
 .idea/

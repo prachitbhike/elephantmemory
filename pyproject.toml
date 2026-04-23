@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-mem0 = ["mem0ai>=0.1.30"]
+mem0 = ["mem0ai>=0.1.30", "psycopg[pool]>=3.2"]
 zep = ["graphiti-core>=0.3"]
 letta = ["letta-client>=0.1"]
 dev = ["pytest>=8.0", "ruff>=0.6", "matplotlib>=3.8"]
