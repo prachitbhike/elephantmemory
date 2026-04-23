@@ -78,7 +78,9 @@ class LettaAdapter:
         return self._client
 
     def setup(self) -> None:
-        self._c()
+        # Exercise the agents.list pagination shape so client-API regressions
+        # (e.g. SyncArrayPage not subscriptable) fail at startup, not per probe.
+        list(self._c().agents.list(name="__elephantmemory_smoke__"))
 
     def teardown(self) -> None:
         if self._client is not None:
@@ -91,7 +93,8 @@ class LettaAdapter:
         if user_id in self._agent_ids:
             return self._agent_ids[user_id]
         name = _agent_name(user_id)
-        existing = self._c().agents.list(name=name)
+        # letta-client returns a SyncArrayPage (paginated, iterable) — not a list.
+        existing = list(self._c().agents.list(name=name))
         if existing:
             agent_id = existing[0].id
         else:
@@ -111,8 +114,7 @@ class LettaAdapter:
 
     def reset_user(self, user_id: str) -> None:
         try:
-            existing = self._c().agents.list(name=_agent_name(user_id))
-            for a in existing:
+            for a in self._c().agents.list(name=_agent_name(user_id)):
                 self._c().agents.delete(a.id)
         except Exception:
             pass
@@ -164,12 +166,13 @@ class LettaAdapter:
         t0 = time.perf_counter()
         try:
             agent_id = self._get_or_create_agent(user_id)
-            matches = self._c().agents.passages.search(agent_id=agent_id, query=predicate, top_k=50)
+            matches = list(
+                self._c().agents.passages.search(agent_id=agent_id, query=predicate, limit=50)
+            )
         except Exception:
             return ForgetResult(0, (time.perf_counter() - t0) * 1000)
-        items = matches if isinstance(matches, list) else getattr(matches, "results", [])
         removed = 0
-        for it in items:
+        for it in matches:
             pid = getattr(it, "id", None) or (it.get("id") if isinstance(it, dict) else None)
             if pid is None:
                 continue
@@ -186,9 +189,8 @@ class LettaAdapter:
     def stats(self, user_id: str) -> AdapterStats:
         try:
             agent_id = self._get_or_create_agent(user_id)
-            passages = self._c().agents.passages.list(agent_id=agent_id, limit=1000)
+            items = list(self._c().agents.passages.list(agent_id=agent_id, limit=1000))
         except Exception:
             return AdapterStats()
-        items = passages if isinstance(passages, list) else getattr(passages, "data", [])
         size = sum(len(getattr(p, "text", "") or "") for p in items)
         return AdapterStats(facts_stored=len(items), bytes_stored=size)

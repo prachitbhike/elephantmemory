@@ -69,7 +69,9 @@ lite_image = (
         "https://github.com/pgvector/pgvector.git /tmp/pgvector",
         "cd /tmp/pgvector && make && make install",
     )
-    .pip_install(*PYTHON_DEPS_BASE, "mem0ai>=0.1.30")
+    # Pin mem0ai: 0.1.40+ requires filters={"user_id": ...} for search/get_all
+    # (top-level user_id= is rejected). Adapter is written for that API.
+    .pip_install(*PYTHON_DEPS_BASE, "mem0ai>=0.1.40,<0.2")
     .add_local_dir(str(REPO_ROOT), "/repo", ignore=IGNORE)
 )
 
