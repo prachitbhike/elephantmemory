@@ -91,7 +91,8 @@ zep_image = (
 letta_image = (
     modal.Image.debian_slim(python_version="3.11")
     .apt_install("git", "build-essential")
-    .pip_install(*PYTHON_DEPS_BASE, "letta-client>=0.1", "letta>=0.6")
+    # asyncpg is imported by letta.orm at module load even in sqlite mode.
+    .pip_install(*PYTHON_DEPS_BASE, "letta-client>=0.1", "letta>=0.6", "asyncpg>=0.29")
     .add_local_dir(str(REPO_ROOT), "/repo", ignore=IGNORE)
 )
 

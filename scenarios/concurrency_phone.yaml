@@ -28,7 +28,7 @@ events:
       user_id: atlas
       timestamp: 2025-09-22T10:00:00
       prompt: What's my current phone number?
-      expected: 0301
+      expected: "0301"
       score_method: contains
       category: concurrency
   - kind: probe
