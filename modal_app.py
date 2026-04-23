@@ -90,9 +90,22 @@ zep_image = (
 
 letta_image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("git", "build-essential")
-    # asyncpg is imported by letta.orm at module load even in sqlite mode.
-    .pip_install(*PYTHON_DEPS_BASE, "letta-client>=0.1", "letta>=0.6", "asyncpg>=0.29")
+    .apt_install(
+        "postgresql", "postgresql-contrib", "postgresql-server-dev-all",
+        "build-essential", "git",
+    )
+    .run_commands(
+        "git clone --depth 1 --branch v0.8.0 "
+        "https://github.com/pgvector/pgvector.git /tmp/pgvector",
+        "cd /tmp/pgvector && make && make install",
+    )
+    # letta>=0.6 dropped sqlite on the server path — it hard-codes an async
+    # Postgres engine, so we bundle Postgres into the container. We also
+    # install letta from source because the pip package doesn't ship the
+    # alembic.ini / migrations that `alembic upgrade head` needs at boot.
+    .run_commands("git clone --depth 1 https://github.com/letta-ai/letta.git /opt/letta")
+    .pip_install(*PYTHON_DEPS_BASE, "letta-client>=0.1", "asyncpg>=0.29", "pg8000>=1.30")
+    .run_commands("pip install -e /opt/letta")
     .add_local_dir(str(REPO_ROOT), "/repo", ignore=IGNORE)
 )
 
@@ -143,8 +156,13 @@ def _boot_neo4j() -> None:
 def _boot_letta_server() -> None:
     import os
     import subprocess
+    _boot_postgres()
     env = os.environ.copy()
     env.setdefault("LETTA_SERVER_PASSWORD", "elephantmemory")
+    env["LETTA_PG_URI"] = "postgresql://elephant:elephant@localhost:5432/elephant"
+    subprocess.run(
+        ["alembic", "upgrade", "head"], cwd="/opt/letta", env=env, check=True,
+    )
     subprocess.Popen(["letta", "server"], env=env)
     _wait_for_port("localhost", 8283, timeout=300, label="letta server")
 
@@ -176,7 +194,7 @@ def _run_cli(
     timeout=3600, memory=4096, cpu=2.0,
 )
 def run_lite(adapters: list[str], scenarios_path: str = "scenarios") -> dict:
-    valid = {"pgvector_diy", "claude_memory", "mem0"}
+    valid = {"pgvector_diy", "claude_memory", "mem0", "gpt_memory"}
     bad = [a for a in adapters if a not in valid]
     if bad:
         raise ValueError(f"adapters {bad} not in lite set {sorted(valid)}")
@@ -209,7 +227,7 @@ def run_zep(scenarios_path: str = "scenarios") -> dict:
 @app.function(
     image=letta_image, secrets=[secret],
     volumes={"/results": results_volume},
-    timeout=3600, memory=4096, cpu=2.0,
+    timeout=3600, memory=8192, cpu=2.0,
 )
 def run_letta(scenarios_path: str = "scenarios") -> dict:
     _boot_letta_server()
@@ -337,7 +355,7 @@ def _diff_latest_two(runs: list) -> list[str]:
 
 # ─── local entrypoint ─────────────────────────────────────────────────────────
 
-LITE = {"pgvector_diy", "claude_memory", "mem0"}
+LITE = {"pgvector_diy", "claude_memory", "mem0", "gpt_memory"}
 
 
 def _summarize(label: str, results_json: str) -> tuple[int, int]:

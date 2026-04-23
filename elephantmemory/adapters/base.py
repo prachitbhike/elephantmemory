@@ -31,6 +31,9 @@ def build_adapter(name: str) -> MemoryAdapter:
     if name == "claude_memory":
         from .claude_memory import ClaudeMemoryAdapter
         return ClaudeMemoryAdapter()
+    if name == "gpt_memory":
+        from .gpt_memory import GPTMemoryAdapter
+        return GPTMemoryAdapter()
     if name == "mem0":
         from .mem0_adapter import Mem0Adapter
         return Mem0Adapter()
