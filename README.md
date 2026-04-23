@@ -109,10 +109,23 @@ time, so it's cached after first build), runs the benchmark, persists
 `results/runs/<run_id>/` to a Modal Volume, and the local entrypoint pulls
 `results.json` back to `results/runs/modal_<run_id>/`.
 
-The `run_lite` function only handles the postgres-backed adapters
-(`pgvector_diy`, `claude_memory`, `mem0`). `zep` (needs Neo4j) and `letta`
-(needs the Letta server) get their own functions in follow-up commits, each
-with their own image and RAM allocation.
+Three functions, one per infra profile:
+
+| Function | Adapters | Image | RAM |
+|---|---|---|---|
+| `run_lite` | pgvector_diy, claude_memory, mem0 | postgres + pgvector | 4 GB |
+| `run_zep` | zep | OpenJDK 17 + Neo4j 5.20 | 8 GB |
+| `run_letta` | letta | letta server (pip) + sqlite | 4 GB |
+
+The local entrypoint fans out across all three in parallel via
+`Function.spawn(...)` — a full 5-adapter run is roughly the wall-clock of
+the slowest profile (usually `run_letta`).
+
+```bash
+modal run modal_app.py --adapters pgvector_diy,mem0,claude_memory,zep,letta
+```
+
+Results land in `results/runs/modal_<profile>_<run_id>/`.
 
 ## Running multiple adapters at once
 
