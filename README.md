@@ -86,26 +86,33 @@ Implement `MemoryAdapter` from [`elephantmemory/adapters/base.py`](elephantmemor
 
 Keep adapter code thin — push framework-specific config into `__init__` kwargs so the runner can stay framework-agnostic.
 
-## Running in an e2b sandbox (no local docker)
+## Running on Modal (no local docker)
 
-If you don't want to run Postgres locally, you can run the lite adapter
-set (`pgvector_diy`, `claude_memory`, `mem0`) inside a fresh
-[e2b](https://e2b.dev) sandbox:
+If you don't want to run Postgres locally, run the benchmark on
+[Modal](https://modal.com). One-time setup:
 
 ```bash
-pip install -e ".[mem0,e2b]"
-# add E2B_API_KEY + ANTHROPIC_API_KEY + OPENAI_API_KEY to .env
-python scripts/run_in_e2b.py --adapter pgvector_diy --adapter mem0
+pip install -e ".[mem0,modal]"
+modal token new
+modal secret create elephantmemory \
+    ANTHROPIC_API_KEY=... OPENAI_API_KEY=...
 ```
 
-The script `git archive`s the working tree, uploads it to a fresh
-sandbox, apt-installs Postgres, builds pgvector from source, runs the
-benchmark, and downloads `results.json` back to
-`results/runs/e2b_<run_id>/`.
+Then:
 
-`zep` (needs Neo4j) and `letta` (needs the Letta server) require a
-custom e2b template — build one with the e2b CLI and pass `--template
-<id>`. The default sandbox doesn't have the RAM headroom for both.
+```bash
+modal run modal_app.py --adapters pgvector_diy,mem0,claude_memory
+```
+
+The function boots Postgres (with pgvector built from source at image-build
+time, so it's cached after first build), runs the benchmark, persists
+`results/runs/<run_id>/` to a Modal Volume, and the local entrypoint pulls
+`results.json` back to `results/runs/modal_<run_id>/`.
+
+The `run_lite` function only handles the postgres-backed adapters
+(`pgvector_diy`, `claude_memory`, `mem0`). `zep` (needs Neo4j) and `letta`
+(needs the Letta server) get their own functions in follow-up commits, each
+with their own image and RAM allocation.
 
 ## Running multiple adapters at once
 

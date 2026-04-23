@@ -27,6 +27,9 @@ results/cache/
 # Lockfile pending uv adoption decision
 uv.lock
 
+# Claude Code workspace
+.claude/
+
 # OS / editor
 .DS_Store
 .idea/
