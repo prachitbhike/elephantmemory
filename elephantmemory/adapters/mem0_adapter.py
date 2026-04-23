@@ -82,7 +82,9 @@ class Mem0Adapter:
         return self._mem
 
     def setup(self) -> None:
-        self._m()
+        # Smoke-test the read path so a kwargs/API regression fails loudly
+        # at startup instead of producing a run of [adapter error: ...] probes.
+        self._m().search("ping", filters={"user_id": "_smoke"}, limit=1)
 
     def teardown(self) -> None:
         if self._mem is not None:
@@ -93,7 +95,7 @@ class Mem0Adapter:
 
     def reset_user(self, user_id: str) -> None:
         try:
-            self._m().delete_all(user_id=user_id)
+            self._m().delete_all(filters={"user_id": user_id})
         except Exception:
             pass
 
@@ -115,7 +117,7 @@ class Mem0Adapter:
     def query(self, user_id: str, prompt: str) -> QueryResult:
         t0 = time.perf_counter()
         try:
-            search_res = self._m().search(prompt, user_id=user_id, limit=8)
+            search_res = self._m().search(prompt, filters={"user_id": user_id}, limit=8)
         except Exception as e:
             return QueryResult(
                 response=f"[adapter error: {e}]",
@@ -146,7 +148,7 @@ class Mem0Adapter:
     def forget(self, user_id: str, predicate: str) -> ForgetResult:
         t0 = time.perf_counter()
         try:
-            res = self._m().search(predicate, user_id=user_id, limit=50)
+            res = self._m().search(predicate, filters={"user_id": user_id}, limit=50)
         except Exception:
             return ForgetResult(0, (time.perf_counter() - t0) * 1000)
         items = res.get("results", []) if isinstance(res, dict) else []
@@ -165,7 +167,7 @@ class Mem0Adapter:
 
     def stats(self, user_id: str) -> AdapterStats:
         try:
-            res = self._m().get_all(user_id=user_id, limit=1000)
+            res = self._m().get_all(filters={"user_id": user_id}, limit=1000)
         except Exception:
             return AdapterStats()
         items = res.get("results", []) if isinstance(res, dict) else []

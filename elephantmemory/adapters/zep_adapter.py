@@ -19,12 +19,21 @@ from dataclasses import dataclass
 from graphiti_core import Graphiti
 from graphiti_core.embedder.openai import OpenAIEmbedder, OpenAIEmbedderConfig
 from graphiti_core.llm_client import LLMConfig
-from graphiti_core.llm_client.anthropic_client import AnthropicClient
+from graphiti_core.llm_client.openai_client import OpenAIClient
 from graphiti_core.nodes import EpisodeType
 
 from .. import llm
 
 logging.getLogger("neo4j.notifications").setLevel(logging.ERROR)
+
+# Graphiti's extraction pipeline depends on reliable structured-output / function-
+# calling, which is significantly more stable on OpenAI than on Anthropic in
+# graphiti-core. Using AnthropicClient produced ~0 entities per episode in
+# benchmark runs (writes succeed, no nodes/edges are created → searches return
+# empty → assistant says "I have no info"). We use a small OpenAI model just for
+# graphiti's extraction; the final answer turn in `query()` still uses Claude
+# via `llm.chat` to keep parity with the other adapters.
+GRAPHITI_LLM_MODEL = os.getenv("GRAPHITI_LLM_MODEL", "gpt-4o-mini")
 from ..types import (
     AdapterStats,
     ForgetResult,
@@ -72,8 +81,8 @@ class ZepAdapter:
 
     def _graphiti(self) -> Graphiti:
         if self._g is None:
-            llm_client = AnthropicClient(
-                config=LLMConfig(model=llm.ASSISTANT_MODEL, max_tokens=2048, temperature=0.0)
+            llm_client = OpenAIClient(
+                config=LLMConfig(model=GRAPHITI_LLM_MODEL, max_tokens=2048, temperature=0.0)
             )
             embedder = OpenAIEmbedder(
                 config=OpenAIEmbedderConfig(embedding_model=llm.EMBED_MODEL, embedding_dim=1536)
@@ -91,6 +100,12 @@ class ZepAdapter:
         g = self._graphiti()
         if not self._initialized:
             self._l().run_until_complete(g.build_indices_and_constraints())
+            # Smoke-test the search path against a sentinel group_id so a broken
+            # graphiti API surfaces here instead of producing a run of empty
+            # retrievals.
+            self._l().run_until_complete(
+                g.search(query="ping", group_ids=["__elephantmemory_smoke__"], num_results=1)
+            )
             self._initialized = True
 
     def teardown(self) -> None:
@@ -118,7 +133,7 @@ class ZepAdapter:
         t0 = time.perf_counter()
         body = "\n".join(f"{t.role}: {t.content}" for t in session.turns)
         try:
-            self._l().run_until_complete(
+            result = self._l().run_until_complete(
                 self._graphiti().add_episode(
                     name=session.session_id,
                     episode_body=body,
@@ -130,10 +145,15 @@ class ZepAdapter:
             )
         except Exception as e:
             return WriteResult(False, (time.perf_counter() - t0) * 1000, note=f"error: {e}")
+        # Surface the silent-extraction failure mode: a successful add_episode
+        # that produced no nodes/edges means the LLM extraction collapsed.
+        n_nodes = len(getattr(result, "nodes", []) or [])
+        n_edges = len(getattr(result, "edges", []) or [])
         return WriteResult(
             success=True,
             latency_ms=(time.perf_counter() - t0) * 1000,
             cost_usd=0.0,
+            note=f"graphiti extracted nodes={n_nodes} edges={n_edges}",
         )
 
     def query(self, user_id: str, prompt: str) -> QueryResult:
