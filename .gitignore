@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Env
+.env
+.env.local
+
+# Results & caches (committed snapshots live under results/snapshots/)
+results/runs/
+results/cache/
+*.sqlite
+*.sqlite-journal
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

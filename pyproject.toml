@@ -1,0 +1,36 @@
+[project]
+name = "elephantmemory"
+version = "0.1.0"
+description = "Benchmark harness for LLM memory frameworks"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.40",
+    "openai>=1.50",
+    "psycopg[binary]>=3.2",
+    "pgvector>=0.3",
+    "pyyaml>=6.0",
+    "click>=8.1",
+    "tabulate>=0.9",
+    "python-dotenv>=1.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+mem0 = ["mem0ai>=0.1.30"]
+zep = ["graphiti-core>=0.3"]
+letta = ["letta-client>=0.1"]
+dev = ["pytest>=8.0", "ruff>=0.6", "matplotlib>=3.8"]
+
+[project.scripts]
+elephantmemory = "elephantmemory.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["elephantmemory"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

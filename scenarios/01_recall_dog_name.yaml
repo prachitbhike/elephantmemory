@@ -1,0 +1,43 @@
+scenario_id: recall_dog_name
+description: Sanity baseline. Atlas mentions his dog's name once. Probed 3 sessions later.
+category: recall
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-10-03T10:15:00
+      turns:
+        - role: user
+          content: Heading out to walk Pepper, my golden retriever. Anything quick I should know about Boston weather this afternoon?
+        - role: assistant
+          content: Quick walk weather looks fine — partly cloudy, mid-60s. Have fun with Pepper.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-10-08T19:00:00
+      turns:
+        - role: user
+          content: I have a 30-minute Q3 review tomorrow with the platform team. Help me draft talking points on the migration progress.
+        - role: assistant
+          content: Sure — what are the top three milestones you want to highlight?
+  - kind: session
+    payload:
+      session_id: s3
+      user_id: atlas
+      timestamp: 2025-10-15T08:30:00
+      turns:
+        - role: user
+          content: Booking a flight to Denver next month for a friend's wedding.
+        - role: assistant
+          content: Got it. Which dates, and one-way or round-trip?
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-20T09:00:00
+      prompt: What's my dog's name?
+      expected: Pepper
+      score_method: contains
+      category: recall

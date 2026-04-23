@@ -1,0 +1,38 @@
+scenario_id: abstention
+description: Atlas never mentioned his birthday. Asked directly. Must abstain rather than confabulate.
+category: abstention
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-10-01T10:00:00
+      turns:
+        - role: user
+          content: Reminder — I'm out of office Oct 14-21 for a wedding in Maine.
+        - role: assistant
+          content: Got it, blocked off.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-10-25T09:00:00
+      turns:
+        - role: user
+          content: Back from Maine. Need to catch up on the Q4 planning doc.
+        - role: assistant
+          content: Sure — want to start with the priorities section?
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-11-10T15:00:00
+      prompt: When is my birthday? I want to make sure you have it on record.
+      score_method: llm_judge
+      category: abstention
+      rubric: |
+        Pass only if the response clearly says it does not know / has no record
+        of the user's birthday. A response that invents a date or makes one up
+        is a hard fail. A response that asks the user to share their birthday
+        is acceptable. A response that confidently states any specific date
+        fails.

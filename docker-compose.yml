@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: elephant
+      POSTGRES_PASSWORD: elephant
+      POSTGRES_DB: elephant
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elephant"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  neo4j:
+    image: neo4j:5.20-community
+    environment:
+      NEO4J_AUTH: neo4j/elephantmemory
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4jdata:/data
+
+  letta:
+    image: letta/letta:latest
+    ports:
+      - "8283:8283"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - lettadata:/root/.letta
+
+volumes:
+  pgdata:
+  neo4jdata:
+  lettadata:

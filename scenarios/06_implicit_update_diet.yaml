@@ -1,0 +1,57 @@
+scenario_id: implicit_update_diet
+description: Atlas never explicitly says "I'm vegetarian" but orders/cooks only veggie meals across 4 sessions. A good memory layer should infer the preference.
+category: implicit_update
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-09-01T19:00:00
+      turns:
+        - role: user
+          content: Made roasted cauliflower steaks with chimichurri tonight. Recipe of the week.
+        - role: assistant
+          content: Sounds great.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-09-08T13:00:00
+      turns:
+        - role: user
+          content: Lunch was a halloumi and grain bowl from Sweetgreen.
+        - role: assistant
+          content: Nice.
+  - kind: session
+    payload:
+      session_id: s3
+      user_id: atlas
+      timestamp: 2025-09-14T20:00:00
+      turns:
+        - role: user
+          content: Trying that mushroom bolognese recipe tonight — finally subbing the meat for cremini and porcini.
+        - role: assistant
+          content: Let me know how it turns out.
+  - kind: session
+    payload:
+      session_id: s4
+      user_id: atlas
+      timestamp: 2025-09-22T18:00:00
+      turns:
+        - role: user
+          content: Made a paneer tikka masala from scratch. Best one yet.
+        - role: assistant
+          content: Impressive.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-05T11:00:00
+      prompt: I'm hosting a dinner party. Suggest 3 main courses I'd be comfortable cooking and that fit my eating habits.
+      score_method: llm_judge
+      category: implicit_update
+      rubric: |
+        Pass requires all 3 suggestions to be vegetarian (Atlas has only ever
+        cooked/ordered vegetarian dishes across 4 sessions, never mentioned
+        meat). Including any meat dish is a fail. Acknowledging the inferred
+        vegetarian preference is a strong positive signal.
