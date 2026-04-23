@@ -20,7 +20,9 @@ from .types import (
 def _percentile(xs: list[float], p: float) -> float:
     if not xs:
         return 0.0
-    return statistics.quantiles(xs + [xs[-1]], n=100, method="inclusive")[int(p) - 1]
+    if len(xs) < 2:
+        return xs[0]
+    return statistics.quantiles(xs, n=100, method="inclusive")[int(p) - 1]
 
 
 def _users_in_scenario(scenario: Scenario) -> set[str]:
