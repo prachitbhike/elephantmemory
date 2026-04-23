@@ -24,13 +24,14 @@ def _session(d: dict) -> Session:
 
 
 def _probe(d: dict) -> Probe:
+    expected = d.get("expected")
     return Probe(
         probe_id=d["probe_id"],
         user_id=d["user_id"],
         timestamp=_ts(d["timestamp"]),
         prompt=d["prompt"],
-        expected=d.get("expected"),
-        must_not_contain=d.get("must_not_contain", []),
+        expected=None if expected is None else str(expected),
+        must_not_contain=[str(x) for x in d.get("must_not_contain", [])],
         category=d.get("category", "recall"),
         score_method=d.get("score_method", "llm_judge"),
         rubric=d.get("rubric"),
