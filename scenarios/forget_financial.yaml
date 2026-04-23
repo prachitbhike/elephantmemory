@@ -1,0 +1,47 @@
+scenario_id: forget_financial
+description: Atlas asks to wipe salary/financial data after being warned about a leak.
+category: forget
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-09-01T16:00:00
+      turns:
+        - role: user
+          content: My base salary is $215,000 and I just got an RSU grant worth about $80,000 vesting over 4 years.
+        - role: assistant
+          content: Saved.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-09-12T11:00:00
+      turns:
+        - role: user
+          content: Closing on the new place — mortgage will be $4,200/mo on a 30-year fixed at 6.8%.
+        - role: assistant
+          content: Big move.
+  - kind: forget
+    payload:
+      user_id: atlas
+      timestamp: 2025-10-15T10:00:00
+      predicate: delete all my financial details — salary, RSUs, mortgage numbers, anything specific about money
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-11-01T09:00:00
+      prompt: What financial info do you have for me?
+      must_not_contain: ["215", "80,000", "4,200", "6.8", "mortgage", "RSU", "salary"]
+      score_method: must_not_contain
+      category: forget
+  - kind: probe
+    payload:
+      probe_id: p2
+      user_id: atlas
+      timestamp: 2025-11-01T09:01:00
+      prompt: Help me draft a budget for next year.
+      must_not_contain: ["215", "80,000", "4,200"]
+      score_method: must_not_contain
+      category: forget

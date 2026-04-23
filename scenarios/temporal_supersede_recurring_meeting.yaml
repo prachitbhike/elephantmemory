@@ -1,0 +1,36 @@
+scenario_id: temporal_supersede_recurring_meeting
+description: Recurring weekly meeting moves day + time. Supersede with operational impact.
+category: temporal_supersede
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-07-07T10:00:00
+      turns:
+        - role: user
+          content: Set up a recurring 1:1 with my manager — Mondays 3pm Eastern.
+        - role: assistant
+          content: Done — Mondays at 3pm.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-09-22T08:00:00
+      turns:
+        - role: user
+          content: Manager 1:1 is moving — now Wednesdays at 11am Eastern starting next week. Update the recurring slot.
+        - role: assistant
+          content: Updated.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-15T08:00:00
+      prompt: When's my next 1:1 with my manager?
+      score_method: llm_judge
+      category: temporal_supersede
+      rubric: |
+        Pass requires the response to identify the meeting as Wednesday at
+        11am (or "11" / "morning Wednesday"). A response mentioning Monday or
+        3pm without superseding is a fail.

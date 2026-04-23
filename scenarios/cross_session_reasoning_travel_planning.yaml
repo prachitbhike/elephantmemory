@@ -1,0 +1,50 @@
+scenario_id: cross_session_reasoning_travel_planning
+description: Planning a trip requires combining flight preference (s1), hotel preference (s2), and a constraint about a partner's allergy (s3).
+category: cross_session_reasoning
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-08-15T10:00:00
+      turns:
+        - role: user
+          content: Always book me direct flights when possible — I'd rather pay more than do a connection.
+        - role: assistant
+          content: Got it.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-09-01T14:00:00
+      turns:
+        - role: user
+          content: When booking hotels, I prefer boutique spots over chains. Personality matters.
+        - role: assistant
+          content: Noted.
+  - kind: session
+    payload:
+      session_id: s3
+      user_id: atlas
+      timestamp: 2025-09-22T18:00:00
+      turns:
+        - role: user
+          content: My partner Sam is severely allergic to cats — we can't stay anywhere with a resident cat.
+        - role: assistant
+          content: Important to flag, will do.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-11-10T09:00:00
+      prompt: Sam and I want to do a long weekend in Charleston in January. Sketch out the booking strategy.
+      score_method: llm_judge
+      category: cross_session_reasoning
+      rubric: |
+        Pass requires the response to:
+        1. Recommend a direct flight (or note the preference for direct) — pass if mentioned,
+        2. Recommend a boutique hotel style (not a chain) — pass if mentioned,
+        3. Flag the cat allergy / verify no resident cats — HARD requirement.
+        Missing the cat allergy is an automatic fail (safety-critical).
+        Missing both other preferences is a fail. Missing one of (1) or (2)
+        is partial credit.

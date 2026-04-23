@@ -1,0 +1,42 @@
+scenario_id: temporal_supersede_doctor
+description: Atlas switches primary care physicians. Old doctor info must be superseded.
+category: temporal_supersede
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-05-10T11:00:00
+      turns:
+        - role: user
+          content: My PCP is Dr. Wong at Brigham. Annual physical is in two weeks.
+        - role: assistant
+          content: Noted.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-09-05T14:00:00
+      turns:
+        - role: user
+          content: Switching primary care to Dr. Reyes at Mass General. Brigham is too far now that I moved. Use Dr. Reyes for any future health stuff.
+        - role: assistant
+          content: Updated.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-15T09:00:00
+      prompt: Who's my doctor? I need to give the name to a specialist office.
+      expected: Reyes
+      score_method: contains
+      category: temporal_supersede
+  - kind: probe
+    payload:
+      probe_id: p2
+      user_id: atlas
+      timestamp: 2025-10-15T09:01:00
+      prompt: Where do I go for my annual physical?
+      must_not_contain: ["Brigham", "Wong"]
+      score_method: must_not_contain
+      category: temporal_supersede

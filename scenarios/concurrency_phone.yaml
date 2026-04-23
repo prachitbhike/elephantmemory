@@ -1,0 +1,42 @@
+scenario_id: concurrency_phone
+description: Two near-simultaneous sessions update Atlas's phone — one with old, one with correction. Final state must converge.
+category: concurrency
+events:
+  - kind: session
+    payload:
+      session_id: s_old
+      user_id: atlas
+      timestamp: 2025-09-15T11:00:00
+      turns:
+        - role: user
+          content: My phone is 617-555-0184.
+        - role: assistant
+          content: Saved.
+  - kind: session
+    payload:
+      session_id: s_new
+      user_id: atlas
+      timestamp: 2025-09-15T11:00:15
+      turns:
+        - role: user
+          content: Sorry — that was the old one. New number is 617-555-0301. Use the new one.
+        - role: assistant
+          content: Updated.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-09-22T10:00:00
+      prompt: What's my current phone number?
+      expected: 0301
+      score_method: contains
+      category: concurrency
+  - kind: probe
+    payload:
+      probe_id: p2
+      user_id: atlas
+      timestamp: 2025-09-22T10:01:00
+      prompt: Send me my contact info for a form.
+      must_not_contain: ["0184"]
+      score_method: must_not_contain
+      category: concurrency

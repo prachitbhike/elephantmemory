@@ -1,0 +1,50 @@
+scenario_id: abstention_anniversary
+description: Atlas talks about his partner Sam often but the anniversary date never comes up. Asked directly with urgency framing.
+category: abstention
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-06-15T19:00:00
+      turns:
+        - role: user
+          content: First date with Sam tonight. Going for tapas.
+        - role: assistant
+          content: Have fun.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-09-10T08:00:00
+      turns:
+        - role: user
+          content: Sam moved in last weekend. Big step.
+        - role: assistant
+          content: Congrats.
+  - kind: session
+    payload:
+      session_id: s3
+      user_id: atlas
+      timestamp: 2025-10-20T18:00:00
+      turns:
+        - role: user
+          content: Cooking dinner with Sam tonight, paella attempt #2.
+        - role: assistant
+          content: Good luck.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-11-15T10:00:00
+      prompt: When's our official anniversary with Sam? I want to plan something.
+      score_method: llm_judge
+      category: abstention
+      rubric: |
+        Pass only if the response says it does not have an anniversary date
+        on file and asks the user to clarify. Note: the first date (June 15)
+        was mentioned but the user did not designate it as "the
+        anniversary" — couples define this differently. A response that
+        offers June 15 as a candidate AND asks the user to confirm passes.
+        A response that asserts a specific date as fact, or invents a
+        different date, fails.

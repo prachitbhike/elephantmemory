@@ -1,0 +1,36 @@
+scenario_id: recall_emergency_contact
+description: A multi-attribute fact (name + relationship + phone). Tests retrieval of the full record.
+category: recall
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-08-01T15:00:00
+      turns:
+        - role: user
+          content: Filling out HR forms. My emergency contact is my mom, Linda Park, 617-555-0142.
+        - role: assistant
+          content: Got it.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-08-30T12:00:00
+      turns:
+        - role: user
+          content: Quick — restaurant rec for sushi tonight in the South End?
+        - role: assistant
+          content: O Ya, Empire, or Douzo are all solid.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-09-25T09:00:00
+      prompt: Who is my emergency contact and how do I reach them?
+      score_method: llm_judge
+      category: recall
+      rubric: |
+        Pass requires the response to include "Linda Park" (or "mom" / "Linda")
+        AND the phone number "617-555-0142" or recognizable variant.
+        Missing either name or number is a fail.

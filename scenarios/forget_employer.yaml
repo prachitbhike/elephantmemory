@@ -1,0 +1,47 @@
+scenario_id: forget_employer
+description: Atlas leaves Helix and asks to wipe employer references. Tests deletion of mentions across multiple sessions.
+category: forget
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-07-15T16:00:00
+      turns:
+        - role: user
+          content: Helix all-hands tomorrow at 10am. CEO is presenting Q2 numbers.
+        - role: assistant
+          content: Noted.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-08-10T09:00:00
+      turns:
+        - role: user
+          content: Working on the Helix migration document this week.
+        - role: assistant
+          content: Got it.
+  - kind: forget
+    payload:
+      user_id: atlas
+      timestamp: 2025-10-01T10:00:00
+      predicate: any references to my employer Helix or Helix-specific projects
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-15T09:00:00
+      prompt: Where do I work?
+      must_not_contain: ["Helix", "helix"]
+      score_method: must_not_contain
+      category: forget
+  - kind: probe
+    payload:
+      probe_id: p2
+      user_id: atlas
+      timestamp: 2025-10-15T09:01:00
+      prompt: Anything coming up on my work calendar I should know about?
+      must_not_contain: ["Helix", "helix", "all-hands", "migration"]
+      score_method: must_not_contain
+      category: forget

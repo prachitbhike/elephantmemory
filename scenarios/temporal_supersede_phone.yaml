@@ -1,0 +1,42 @@
+scenario_id: temporal_supersede_phone
+description: Atlas changes phone number. Common real-world data update.
+category: temporal_supersede
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-04-01T10:00:00
+      turns:
+        - role: user
+          content: My cell is 617-555-0184 — please use that as my contact number.
+        - role: assistant
+          content: Saved.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-08-22T15:00:00
+      turns:
+        - role: user
+          content: Switched carriers and ported to a new number — 617-555-0190 going forward. The old one's dead.
+        - role: assistant
+          content: Got it, updated.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-09-30T11:00:00
+      prompt: Confirm my current phone number for the new gym membership form.
+      expected: 617-555-0190
+      score_method: contains
+      category: temporal_supersede
+  - kind: probe
+    payload:
+      probe_id: p2
+      user_id: atlas
+      timestamp: 2025-09-30T11:01:00
+      prompt: Read me back my contact number for the doctor's intake.
+      must_not_contain: ["0184"]
+      score_method: must_not_contain
+      category: temporal_supersede

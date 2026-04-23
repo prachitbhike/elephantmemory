@@ -1,0 +1,51 @@
+scenario_id: cross_session_reasoning_meeting_prep
+description: Briefing for a meeting requires combining who the attendee is (s1), the project context (s2), and an outstanding issue (s3).
+category: cross_session_reasoning
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-09-01T10:00:00
+      turns:
+        - role: user
+          content: New skip-level meeting set up with Priya Shankar — she's our VP of Engineering, two levels up from me.
+        - role: assistant
+          content: Noted.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-09-15T16:00:00
+      turns:
+        - role: user
+          content: Big update — the Atlas-to-Bedrock migration that I'm leading is now 60% done, ahead of the Q4 schedule. Wins so far on latency and cost.
+        - role: assistant
+          content: Great.
+  - kind: session
+    payload:
+      session_id: s3
+      user_id: atlas
+      timestamp: 2025-10-12T09:00:00
+      turns:
+        - role: user
+          content: Hit a snag — the legacy auth system we're migrating off has a third-party dependency that's blocking the cutover. We're 2 weeks behind on that piece.
+        - role: assistant
+          content: Tracked.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-25T08:00:00
+      prompt: I have a 30-min skip-level next week. Help me build talking points.
+      score_method: llm_judge
+      category: cross_session_reasoning
+      rubric: |
+        Pass requires the response to:
+        1. Identify the meeting is with Priya (or "VP of Engineering"),
+        2. Reference the Bedrock migration as the main project,
+        3. Surface BOTH the wins (60% done, ahead, latency/cost wins) AND
+           the auth-system blocker (2 weeks behind).
+        Surfacing only wins without the blocker is a partial fail (a
+        skip-level should hear honest status). Missing the migration project
+        entirely is a fail.

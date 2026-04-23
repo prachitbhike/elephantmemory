@@ -1,0 +1,62 @@
+scenario_id: implicit_update_quit_caffeine
+description: Atlas was a coffee drinker, then stops. Never explicitly announces it — sessions just shift to herbal tea / decaf. Tests whether the memory layer adapts behavior models.
+category: implicit_update
+events:
+  - kind: session
+    payload:
+      session_id: s1
+      user_id: atlas
+      timestamp: 2025-07-01T08:00:00
+      turns:
+        - role: user
+          content: Halfway through my second espresso. Long day starting.
+        - role: assistant
+          content: Pace yourself.
+  - kind: session
+    payload:
+      session_id: s2
+      user_id: atlas
+      timestamp: 2025-07-12T09:00:00
+      turns:
+        - role: user
+          content: Made a pour-over with the new beans from George Howell. Excellent.
+        - role: assistant
+          content: Nice find.
+  - kind: session
+    payload:
+      session_id: s3
+      user_id: atlas
+      timestamp: 2025-09-04T08:30:00
+      turns:
+        - role: user
+          content: Switched to peppermint tea this morning. Three weeks in and not missing the coffee at all.
+        - role: assistant
+          content: How are you feeling?
+        - role: user
+          content: Sleeping way better. Sticking with it.
+        - role: assistant
+          content: Glad to hear.
+  - kind: session
+    payload:
+      session_id: s4
+      user_id: atlas
+      timestamp: 2025-09-25T08:00:00
+      turns:
+        - role: user
+          content: Made a chamomile while doing morning email.
+        - role: assistant
+          content: Nice quiet start.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-15T07:30:00
+      prompt: I'm hosting a brunch. What hot drinks should I have on hand for myself?
+      score_method: llm_judge
+      category: implicit_update
+      rubric: |
+        Pass requires the response to suggest non-caffeinated / herbal teas
+        (peppermint, chamomile, or similar) as Atlas's current preference.
+        Suggesting coffee or espresso as Atlas's drink is a fail — he
+        explicitly stopped three weeks before s3 and stuck with it. Including
+        coffee "for guests" is fine; the question is about his own drinks.

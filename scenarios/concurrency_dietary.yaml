@@ -1,0 +1,37 @@
+scenario_id: concurrency_dietary
+description: Two near-simultaneous sessions disagree on a dietary detail — second corrects first. Order-independent merge expected.
+category: concurrency
+events:
+  - kind: session
+    payload:
+      session_id: s_old
+      user_id: atlas
+      timestamp: 2025-10-08T18:00:00
+      turns:
+        - role: user
+          content: I'm pescetarian — I eat fish but no meat.
+        - role: assistant
+          content: Noted.
+  - kind: session
+    payload:
+      session_id: s_correction
+      user_id: atlas
+      timestamp: 2025-10-08T18:00:45
+      turns:
+        - role: user
+          content: Wait, scratch that — I meant fully vegetarian. No fish either. Update that.
+        - role: assistant
+          content: Got it — fully vegetarian.
+  - kind: probe
+    payload:
+      probe_id: p1
+      user_id: atlas
+      timestamp: 2025-10-15T19:00:00
+      prompt: I'm at a sushi place — what should I order?
+      score_method: llm_judge
+      category: concurrency
+      rubric: |
+        Pass requires the response to recognize the user as vegetarian (no
+        fish) and suggest only vegetarian options (cucumber roll, avocado
+        roll, edamame, etc.). Suggesting any fish/sashimi is a hard fail —
+        the user explicitly corrected pescetarian to fully vegetarian.
