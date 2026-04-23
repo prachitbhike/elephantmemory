@@ -22,10 +22,10 @@ A simulated personal assistant ("Atlas") and a second user ("Brooke") talk to a 
 | Adapter | Status | Memory model |
 |---|---|---|
 | `pgvector_diy` | ✅ functional | Vanilla embeddings + LLM-extracted facts in Postgres. The "no framework" baseline. |
-| `claude_memory` | 🚧 skeleton | Anthropic memory tool — agent curates a filesystem |
-| `mem0` | 🚧 skeleton | Vector-extracted facts with optional graph |
-| `zep` | 🚧 skeleton | Bitemporal knowledge graph (Graphiti) |
-| `letta` | 🚧 skeleton | Agent self-edits OS-style memory blocks |
+| `claude_memory` | ✅ functional | Anthropic memory tool — agent curates a filesystem via `BetaLocalFilesystemMemoryTool` |
+| `mem0` | ✅ functional | Vector-extracted facts; configured to share the pgvector backend with the DIY baseline |
+| `zep` | ✅ functional | Bitemporal knowledge graph via graphiti-core OSS against Neo4j |
+| `letta` | ✅ functional | Agent self-edits OS-style memory blocks; one agent per user against self-hosted Letta server |
 
 Tier 2 (LangMem, LlamaIndex, Cognee, Mastra, AWS AgentCore) deferred until Tier 1 results are stable.
 
@@ -86,6 +86,27 @@ Implement `MemoryAdapter` from [`elephantmemory/adapters/base.py`](elephantmemor
 
 Keep adapter code thin — push framework-specific config into `__init__` kwargs so the runner can stay framework-agnostic.
 
+## Running multiple adapters at once
+
+```bash
+docker compose up -d postgres neo4j letta
+elephantmemory run \
+  --adapter pgvector_diy \
+  --adapter claude_memory \
+  --adapter mem0 \
+  --adapter zep \
+  --adapter letta \
+  --scenarios scenarios/
+```
+
+Estimated cost for the 8-scenario starter set across all 5 adapters at
+Sonnet 4.6 prices: ~$1–3 per full run, depending on how chatty Letta gets
+internally and how many extraction calls mem0/Zep make. Add the dependencies
+you actually want with `pip install -e ".[mem0,zep,letta]"`.
+
 ## Status
 
-v0.1 — foundation + pgvector baseline. Other Tier 1 adapters in progress (one per follow-up commit).
+v0.1 — all five Tier 1 adapters functional. Awaiting first canonical
+results snapshot (pending postgres + neo4j + letta containers running with
+real API keys); will land under `results/snapshots/` and be referenced
+from the report.
