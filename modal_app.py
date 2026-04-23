@@ -223,6 +223,121 @@ def run_letta(scenarios_path: str = "scenarios") -> dict:
     return {"run_id": run_id, "results_json": results_json, "profile": "letta"}
 
 
+# ─── scheduled regression + aggregate report ──────────────────────────────────
+
+REPORT_IMAGE = (
+    modal.Image.debian_slim(python_version="3.11").pip_install("tabulate>=0.9")
+)
+
+
+@app.function(
+    image=REPORT_IMAGE,
+    schedule=modal.Cron("0 6 * * 0"),  # weekly Sunday 06:00 UTC
+    timeout=4200,
+)
+def weekly_regression() -> dict:
+    """Run the full 5-adapter grid; results land in the volume for trend tracking.
+
+    Activate by deploying once: `modal deploy modal_app.py`
+    """
+    pending = [
+        ("lite", run_lite.spawn(sorted(LITE), "scenarios")),
+        ("zep", run_zep.spawn("scenarios")),
+        ("letta", run_letta.spawn("scenarios")),
+    ]
+    summary: dict[str, str] = {}
+    for label, call in pending:
+        try:
+            out = call.get()
+            summary[label] = out["run_id"]
+        except Exception as e:
+            summary[label] = f"FAILED: {type(e).__name__}: {e}"
+    return summary
+
+
+@app.function(
+    image=REPORT_IMAGE,
+    volumes={"/results": results_volume},
+    timeout=600,
+)
+def aggregate_report() -> str:
+    """Walk every results.json in the volume; return a markdown trend report."""
+    import json
+    from collections import defaultdict
+    from pathlib import Path
+
+    from tabulate import tabulate
+
+    runs = sorted(p for p in Path("/results/runs").iterdir() if p.is_dir())
+    if not runs:
+        return "no runs in volume yet"
+
+    history: dict[tuple[str, str], list[tuple[str, float, int]]] = defaultdict(list)
+    for run_dir in runs:
+        rj = run_dir / "results.json"
+        if not rj.exists():
+            continue
+        data = json.loads(rj.read_text())
+        per_cell: dict[tuple[str, str], list[bool]] = defaultdict(list)
+        for r in data:
+            for o in r["outcomes"]:
+                per_cell[(r["adapter"], o["category"])].append(o["passed"])
+        for (a, c), passes in per_cell.items():
+            n = len(passes)
+            history[(a, c)].append((run_dir.name, sum(passes) / n, n))
+
+    adapters = sorted({a for a, _ in history})
+    categories = sorted({c for _, c in history})
+
+    latest_run = runs[-1].name
+    rows = []
+    for cat in categories:
+        row = [cat]
+        for ad in adapters:
+            cell = next(((p, n) for r, p, n in reversed(history.get((ad, cat), []))
+                         if r == latest_run), None)
+            row.append(f"{cell[0]:.0%} ({cell[1]})" if cell else "—")
+        rows.append(row)
+
+    out = ["# elephantmemory regression report\n",
+           f"## Latest run: `{latest_run}`\n",
+           tabulate(rows, headers=["category"] + adapters, tablefmt="github"), "\n",
+           f"Total runs in history: {len(runs)}\n",
+           "## Trend (last 5 runs, % passing per cell)\n"]
+    for (ad, cat) in sorted(history):
+        recent = history[(ad, cat)][-5:]
+        if len(recent) < 2:
+            continue
+        trend = " → ".join(f"{p:.0%}" for _, p, _ in recent)
+        delta = recent[-1][1] - recent[0][1]
+        flag = " ⚠️" if delta < -0.10 else ""
+        out.append(f"- **{ad}** / {cat}: {trend}{flag}")
+
+    diffs = _diff_latest_two(runs)
+    if diffs:
+        out.append("\n## Probes that flipped vs. previous run\n")
+        out.extend(diffs)
+
+    return "\n".join(out)
+
+
+def _diff_latest_two(runs: list) -> list[str]:
+    import json
+    if len(runs) < 2:
+        return []
+    prev, curr = runs[-2], runs[-1]
+    p_data = json.loads((prev / "results.json").read_text()) if (prev / "results.json").exists() else []
+    c_data = json.loads((curr / "results.json").read_text()) if (curr / "results.json").exists() else []
+    p_idx = {(r["adapter"], o["probe_id"]): o["passed"] for r in p_data for o in r["outcomes"]}
+    c_idx = {(r["adapter"], o["probe_id"]): o["passed"] for r in c_data for o in r["outcomes"]}
+    flips = []
+    for k, c_passed in c_idx.items():
+        if k in p_idx and p_idx[k] != c_passed:
+            arrow = "✅→❌" if p_idx[k] and not c_passed else "❌→✅"
+            flips.append(f"- {arrow} **{k[0]}** / `{k[1]}`")
+    return flips
+
+
 # ─── local entrypoint ─────────────────────────────────────────────────────────
 
 LITE = {"pgvector_diy", "claude_memory", "mem0"}
@@ -249,7 +364,7 @@ def main(adapters: str = "pgvector_diy", scenarios: str = "scenarios") -> None:
 
     print(f"running on Modal: lite={lite_set} zep={has_zep} letta={has_letta}")
 
-    pending = []
+    pending: list = []
     if lite_set:
         pending.append(("lite", run_lite.spawn(lite_set, scenarios)))
     if has_zep:
@@ -266,3 +381,16 @@ def main(adapters: str = "pgvector_diy", scenarios: str = "scenarios") -> None:
         (local_dir / "results.json").write_text(out["results_json"])
         _summarize(label, out["results_json"])
         print(f"    → {local_dir}")
+
+
+@app.local_entrypoint()
+def report() -> None:
+    """Pull the markdown trend report off the volume to results/trend_report.md."""
+    md = aggregate_report.remote()
+    out = REPO_ROOT / "results" / "trend_report.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(md)
+    print(md)
+    print(f"\nreport → {out}")
+
+

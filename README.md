@@ -127,6 +127,25 @@ modal run modal_app.py --adapters pgvector_diy,mem0,claude_memory,zep,letta
 
 Results land in `results/runs/modal_<profile>_<run_id>/`.
 
+### Weekly regression + trend report
+
+Once you've deployed the app, a `weekly_regression` function fires every
+Sunday at 06:00 UTC, runs all 5 adapters across the full corpus, and lands
+results in the shared Volume:
+
+```bash
+modal deploy modal_app.py
+```
+
+To pull a markdown report comparing every run in the volume's history,
+flagging probes that flipped between the last two runs and any
+(adapter, category) cell whose pass rate dropped >10% over the last 5 runs:
+
+```bash
+modal run modal_app.py::report
+# → results/trend_report.md
+```
+
 ## Running multiple adapters at once
 
 ```bash
